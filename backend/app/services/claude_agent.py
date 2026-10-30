@@ -12,6 +12,8 @@ from app.services.agent_tools import (
     list_projects,
     get_project_details,
     get_department_employees,
+    get_project_intelligence,
+    get_employee_intelligence,
 )
 
 load_dotenv()
@@ -24,9 +26,7 @@ TOOLS = [
         "description": "Search employees by name or employee code.",
         "input_schema": {
             "type": "object",
-            "properties": {
-                "query": {"type": "string"}
-            },
+            "properties": {"query": {"type": "string"}},
             "required": ["query"],
         },
     },
@@ -35,9 +35,7 @@ TOOLS = [
         "description": "Retrieve attendance records for a specific employee.",
         "input_schema": {
             "type": "object",
-            "properties": {
-                "employee_name": {"type": "string"}
-            },
+            "properties": {"employee_name": {"type": "string"}},
             "required": ["employee_name"],
         },
     },
@@ -46,9 +44,7 @@ TOOLS = [
         "description": "Retrieve tasks assigned to a specific employee.",
         "input_schema": {
             "type": "object",
-            "properties": {
-                "employee_name": {"type": "string"}
-            },
+            "properties": {"employee_name": {"type": "string"}},
             "required": ["employee_name"],
         },
     },
@@ -57,9 +53,7 @@ TOOLS = [
         "description": "List company projects, optionally filtered by status.",
         "input_schema": {
             "type": "object",
-            "properties": {
-                "status": {"type": "string"}
-            },
+            "properties": {"status": {"type": "string"}},
         },
     },
     {
@@ -67,21 +61,35 @@ TOOLS = [
         "description": "Retrieve project information, team members, roles and tasks.",
         "input_schema": {
             "type": "object",
-            "properties": {
-                "project_name": {"type": "string"}
-            },
+            "properties": {"project_name": {"type": "string"}},
             "required": ["project_name"],
         },
     },
     {
         "name": "get_department_employees",
-        "description": "Find all employees in a department. ALWAYS use this tool when a manager asks who works in a department or asks for employees grouped by department.",
+        "description": "Find all employees in a department.",
         "input_schema": {
             "type": "object",
-            "properties": {
-                "department_name": {"type": "string"}
-            },
+            "properties": {"department_name": {"type": "string"}},
             "required": ["department_name"],
+        },
+    },
+    {
+        "name": "get_project_intelligence",
+        "description": "Analyze project health, completion, overdue tasks, deadline risks and team workload.",
+        "input_schema": {
+            "type": "object",
+            "properties": {"project_name": {"type": "string"}},
+            "required": ["project_name"],
+        },
+    },
+    {
+        "name": "get_employee_intelligence",
+        "description": "Analyze an employee's assigned workload, completed tasks, pending tasks, overdue tasks and completion percentage. Use for employee workload and task performance questions.",
+        "input_schema": {
+            "type": "object",
+            "properties": {"employee_name": {"type": "string"}},
+            "required": ["employee_name"],
         },
     },
 ]
@@ -102,33 +110,33 @@ def run_agent(db, question: str):
         "list_projects": lambda **args: list_projects(db, **args),
         "get_project_details": lambda **args: get_project_details(db, **args),
         "get_department_employees": lambda **args: get_department_employees(db, **args),
+        "get_project_intelligence": lambda **args: get_project_intelligence(db, **args),
+        "get_employee_intelligence": lambda **args: get_employee_intelligence(db, **args),
     }
 
-    messages = [
-        {
-            "role": "user",
-            "content": question,
-        }
-    ]
+    messages = [{"role": "user", "content": question}]
 
     system_prompt = """
 You are OrgMind AI, an AI assistant for company managers.
 
-You must use the appropriate database tool for company-related factual questions.
+Use the appropriate database tool for company-related factual questions.
 
-IMPORTANT TOOL RULES:
-- For department questions such as "Who works in Development?",
-  ALWAYS call get_department_employees.
-- Do not use search_employees to search for department names.
-- For employee attendance, call get_employee_attendance.
-- For employee tasks, call get_employee_tasks.
-- For project team questions, call get_project_details.
-- For project listing and status, call list_projects.
+TOOL RULES:
+- Department questions: ALWAYS use get_department_employees.
+- Employee attendance: use get_employee_attendance.
+- Employee task lists: use get_employee_tasks.
+- Employee workload, task completion, overdue tasks or employee analysis:
+  ALWAYS use get_employee_intelligence when a specific employee is mentioned.
+- Project team questions: use get_project_details.
+- Project listing and status: use list_projects.
+- Project health, risks and completion analysis: use get_project_intelligence.
 
-Never invent company information.
-Only report facts returned by the database.
-If a tool returns an error, explain it honestly.
+Never invent company information or statistics.
+Only report facts returned by database tools.
+Distinguish objective database indicators from recommendations.
+Do not make unsupported judgments about employee performance.
 Never claim to know an employee's live location.
+If a tool returns an error, explain it honestly.
 Keep answers concise and clear.
 """
 

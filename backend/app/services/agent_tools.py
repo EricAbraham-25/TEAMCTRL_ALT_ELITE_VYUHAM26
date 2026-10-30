@@ -1,5 +1,7 @@
 
 from sqlalchemy.orm import Session
+from app.services.project_intelligence import analyze_project
+from app.services.employee_intelligence import analyze_employee
 
 from app.models.company import (
     Employee,
@@ -199,3 +201,23 @@ def get_department_employees(db: Session, department_name: str):
             for e in employees
         ],
     }
+
+def get_project_intelligence(db, project_name):
+    project = db.query(Project).filter(
+        Project.name.ilike(f"%{project_name}%")
+    ).first()
+
+    if not project:
+        return {"error": f"Project '{project_name}' not found"}
+
+    return analyze_project(db, project.id)
+
+def get_employee_intelligence(db, employee_name):
+    employee = db.query(Employee).filter(
+        Employee.name.ilike(f"%{employee_name}%")
+    ).first()
+
+    if not employee:
+        return {"error": f"Employee '{employee_name}' not found"}
+
+    return analyze_employee(db, employee.id)
