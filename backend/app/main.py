@@ -1,10 +1,14 @@
+
 from fastapi import FastAPI
+from app.api.employees import router as employee_router
 
 app = FastAPI(
     title="OrgMind AI",
-    description="AI-powered Organization Intelligence System",
+    description="AI-powered Organization Management and Intelligence System",
     version="1.0.0"
 )
+
+app.include_router(employee_router)
 
 
 @app.get("/")
