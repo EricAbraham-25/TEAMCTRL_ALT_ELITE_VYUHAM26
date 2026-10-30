@@ -1,6 +1,7 @@
 
 from fastapi import FastAPI
 from app.api.employees import router as employee_router
+from app.api.departments import router as department_router
 
 app = FastAPI(
     title="OrgMind AI",
@@ -9,6 +10,7 @@ app = FastAPI(
 )
 
 app.include_router(employee_router)
+app.include_router(department_router)
 
 
 @app.get("/")
