@@ -70,6 +70,11 @@ class TaskUpdate(BaseModel):
     due_date: Optional[date] = None
 
 
+class TaskProgressUpdate(BaseModel):
+    status: Optional[str] = None
+    progress: Optional[int] = Field(default=None, ge=0, le=100)
+
+
 class TaskResponse(BaseModel):
     id: int
     project_id: int

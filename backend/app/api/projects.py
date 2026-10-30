@@ -14,7 +14,8 @@ from app.models.company import (
 
 from app.core.dependencies import (
     get_current_user,
-    require_manager
+    require_manager,
+    require_employee
 )
 from app.schemas.project import (
     ProjectCreate,
@@ -24,6 +25,7 @@ from app.schemas.project import (
     ProjectMemberResponse,
     TaskCreate,
     TaskUpdate,
+    TaskProgressUpdate,
     TaskResponse
 )
 
@@ -476,6 +478,46 @@ def update_task(
 
         if not member:
             raise HTTPException(400, "Employee is not a project member")
+
+    for key, value in updates.items():
+        setattr(task, key, value)
+
+    db.commit()
+    db.refresh(task)
+
+    return task
+
+
+@router.patch(
+    "/tasks/{task_id}/progress",
+    response_model=TaskResponse
+)
+def update_task_progress(
+    task_id: int,
+    data: TaskProgressUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_employee)
+):
+    if current_user.employee_id is None:
+        raise HTTPException(403, "No employee profile linked to this account")
+
+    task = db.query(Task).filter(
+        Task.id == task_id
+    ).first()
+
+    if not task:
+        raise HTTPException(404, "Task not found")
+
+    if task.assigned_to != current_user.employee_id:
+        raise HTTPException(403, "You are not assigned to this task")
+
+    updates = data.model_dump(exclude_unset=True)
+
+    if not updates:
+        raise HTTPException(422, "Provide at least one of status or progress")
+
+    if "status" in updates and updates["status"] is None:
+        raise HTTPException(422, "Task status cannot be null")
 
     for key, value in updates.items():
         setattr(task, key, value)
