@@ -8,7 +8,13 @@ from app.models.company import (
     Project,
     ProjectMember,
     Employee,
-    Task
+    Task,
+    User
+)
+
+from app.core.dependencies import (
+    get_current_user,
+    require_manager
 )
 from app.schemas.project import (
     ProjectCreate,
@@ -34,13 +40,44 @@ def get_db():
     finally:
         db.close()
 
+def get_accessible_project(
+    project_id: int,
+    db: Session,
+    current_user: User
+):
+    project = db.query(Project).filter(
+        Project.id == project_id
+    ).first()
+
+    if not project:
+        raise HTTPException(404, "Project not found")
+
+    # Managers can access every project.
+    if current_user.role == "manager":
+        return project
+
+    # Employees can access only projects they belong to.
+    if current_user.role == "employee":
+        membership = db.query(ProjectMember).filter(
+            ProjectMember.project_id == project_id,
+            ProjectMember.employee_id == current_user.employee_id
+        ).first()
+
+        if not membership:
+            raise HTTPException(403, "You are not assigned to this project")
+
+        return project
+
+    raise HTTPException(403, "Access denied")
+
 
 # ---------------- PROJECT MANAGEMENT ----------------
 
 @router.post("/", response_model=ProjectResponse, status_code=201)
 def create_project(
     data: ProjectCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_manager)
 ):
     if data.project_manager_id is not None:
         manager = db.query(Employee).filter(
@@ -60,47 +97,84 @@ def create_project(
 
 
 @router.get("/", response_model=list[ProjectResponse])
-def get_projects(db: Session = Depends(get_db)):
-    return db.query(Project).order_by(Project.id.desc()).all()
+def get_projects(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    query = db.query(Project)
 
+    if current_user.role == "employee":
+        query = query.join(
+            ProjectMember,
+            Project.id == ProjectMember.project_id
+        ).filter(
+            ProjectMember.employee_id == current_user.employee_id
+        )
+
+    return query.order_by(Project.id.desc()).all()
 
 @router.get("/active", response_model=list[ProjectResponse])
-def get_active_projects(db: Session = Depends(get_db)):
-    return db.query(Project).filter(
+def get_active_projects(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    query = db.query(Project).filter(
         Project.status == "ongoing"
-    ).all()
+    )
+
+    if current_user.role == "employee":
+        query = query.join(
+            ProjectMember,
+            Project.id == ProjectMember.project_id
+        ).filter(
+            ProjectMember.employee_id == current_user.employee_id
+        )
+
+    return query.all()
 
 
 @router.get("/delayed", response_model=list[ProjectResponse])
-def get_delayed_projects(db: Session = Depends(get_db)):
+def get_delayed_projects(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
     from datetime import date
 
-    return db.query(Project).filter(
+    query = db.query(Project).filter(
         Project.deadline < date.today(),
         Project.status.notin_(["completed", "cancelled"])
-    ).all()
+    )
+
+    if current_user.role == "employee":
+        query = query.join(
+            ProjectMember,
+            Project.id == ProjectMember.project_id
+        ).filter(
+            ProjectMember.employee_id == current_user.employee_id
+        )
+
+    return query.all()
 
 
 @router.get("/{project_id}", response_model=ProjectResponse)
 def get_project(
     project_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
-    project = db.query(Project).filter(
-        Project.id == project_id
-    ).first()
-
-    if not project:
-        raise HTTPException(404, "Project not found")
-
-    return project
+    return get_accessible_project(
+        project_id,
+        db,
+        current_user
+    )
 
 
 @router.put("/{project_id}", response_model=ProjectResponse)
 def update_project(
     project_id: int,
     data: ProjectUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_manager)
 ):
     project = db.query(Project).filter(
         Project.id == project_id
@@ -138,7 +212,8 @@ def update_project(
 @router.delete("/{project_id}")
 def delete_project(
     project_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_manager)
 ):
     project = db.query(Project).filter(
         Project.id == project_id
@@ -178,7 +253,8 @@ def delete_project(
 def add_project_member(
     project_id: int,
     data: ProjectMemberCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_manager)
 ):
     project = db.query(Project).filter(
         Project.id == project_id
@@ -218,7 +294,8 @@ def add_project_member(
 @router.get("/{project_id}/members")
 def get_project_members(
     project_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_manager)
 ):
     project = db.query(Project).filter(
         Project.id == project_id
@@ -253,7 +330,8 @@ def get_project_members(
 def remove_project_member(
     project_id: int,
     employee_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_manager)
 ):
     member = db.query(ProjectMember).filter(
         ProjectMember.project_id == project_id,
@@ -279,7 +357,8 @@ def remove_project_member(
 def create_task(
     project_id: int,
     data: TaskCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_manager)
 ):
     project = db.query(Project).filter(
         Project.id == project_id
@@ -322,29 +401,42 @@ def create_task(
 @router.get("/{project_id}/tasks", response_model=list[TaskResponse])
 def get_project_tasks(
     project_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
-    project = db.query(Project).filter(
-        Project.id == project_id
-    ).first()
+    get_accessible_project(project_id, db, current_user)
 
-    if not project:
-        raise HTTPException(404, "Project not found")
-
-    return db.query(Task).filter(
+    query = db.query(Task).filter(
         Task.project_id == project_id
-    ).order_by(Task.id.desc()).all()
+    )
+
+    if current_user.role == "employee":
+        query = query.filter(
+            Task.assigned_to == current_user.employee_id
+        )
+
+    return query.order_by(Task.id.desc()).all()
 
 
 @router.get("/{project_id}/tasks/pending")
 def get_pending_tasks(
     project_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
-    return db.query(Task).filter(
+    get_accessible_project(project_id, db, current_user)
+
+    query = db.query(Task).filter(
         Task.project_id == project_id,
         Task.status == "pending"
-    ).all()
+    )
+
+    if current_user.role == "employee":
+        query = query.filter(
+            Task.assigned_to == current_user.employee_id
+        )
+
+    return query.all()
 
 
 @router.put(
@@ -354,7 +446,8 @@ def get_pending_tasks(
 def update_task(
     task_id: int,
     data: TaskUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_manager)
 ):
     task = db.query(Task).filter(
         Task.id == task_id
@@ -396,7 +489,8 @@ def update_task(
 @router.delete("/tasks/{task_id}")
 def delete_task(
     task_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_manager)
 ):
     task = db.query(Task).filter(
         Task.id == task_id
@@ -416,7 +510,8 @@ def delete_task(
 @router.get("/{project_id}/summary")
 def get_project_summary(
     project_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_manager)
 ):
     project = db.query(Project).filter(
         Project.id == project_id

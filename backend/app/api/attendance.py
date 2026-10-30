@@ -5,8 +5,9 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 
 from app.database.connection import SessionLocal
-from app.models.company import Attendance, Employee
+from app.models.company import Attendance, Employee, User
 from app.schemas.attendance import AttendanceResponse
+from app.core.dependencies import get_current_user, require_manager
 
 router = APIRouter(
     prefix="/api/attendance",
@@ -28,8 +29,25 @@ def get_today():
     return datetime.now(TIMEZONE).date()
 
 
+def verify_employee_access(employee_id: int, current_user: User):
+    if current_user.role == "employee":
+        if current_user.employee_id != employee_id:
+            raise HTTPException(
+                status_code=403,
+                detail="You can only access your own attendance"
+            )
+    elif current_user.role != "manager":
+        raise HTTPException(status_code=403, detail="Access denied")
+
+
+# CHECK IN
 @router.post("/check-in/{employee_id}", response_model=AttendanceResponse)
-def check_in(employee_id: int, db: Session = Depends(get_db)):
+def check_in(
+    employee_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    verify_employee_access(employee_id, current_user)
 
     employee = db.query(Employee).filter(
         Employee.id == employee_id
@@ -62,8 +80,14 @@ def check_in(employee_id: int, db: Session = Depends(get_db)):
     return attendance
 
 
+# CHECK OUT
 @router.post("/check-out/{employee_id}", response_model=AttendanceResponse)
-def check_out(employee_id: int, db: Session = Depends(get_db)):
+def check_out(
+    employee_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    verify_employee_access(employee_id, current_user)
 
     today = get_today()
 
@@ -86,9 +110,12 @@ def check_out(employee_id: int, db: Session = Depends(get_db)):
     return record
 
 
+# MANAGER: VIEW TODAY'S ORGANIZATION ATTENDANCE
 @router.get("/today")
-def get_today_attendance(db: Session = Depends(get_db)):
-
+def get_today_attendance(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_manager)
+):
     today = get_today()
 
     records = db.query(Attendance, Employee).join(
@@ -115,11 +142,14 @@ def get_today_attendance(db: Session = Depends(get_db)):
     ]
 
 
+# MANAGER OR EMPLOYEE'S OWN ATTENDANCE
 @router.get("/employee/{employee_id}", response_model=list[AttendanceResponse])
 def get_employee_attendance(
     employee_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
+    verify_employee_access(employee_id, current_user)
 
     employee = db.query(Employee).filter(
         Employee.id == employee_id
@@ -135,11 +165,14 @@ def get_employee_attendance(
     ).all()
 
 
+# MANAGER OR EMPLOYEE'S OWN TODAY STATUS
 @router.get("/employee/{employee_id}/today")
 def get_employee_today_status(
     employee_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
+    verify_employee_access(employee_id, current_user)
 
     today = get_today()
 

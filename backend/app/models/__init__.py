@@ -4,5 +4,6 @@ from app.models.company import (
     Attendance,
     Project,
     ProjectMember,
-    Task
+    Task,
+    User
 )

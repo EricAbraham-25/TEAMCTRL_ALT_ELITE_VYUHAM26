@@ -8,12 +8,20 @@ from app.api.attendance import router as attendance_router
 from app.api.projects import router as project_router
 from app.api.chat import router as chat_router
 from app.api.employee_intelligence import router as employee_intelligence_router
+from app.database.connection import Base, engine
+from app.models import User
+from app.api.auth import router as auth_router
+
 
 app = FastAPI(
     title="OrgMind AI",
     description="AI-Powered Company Management System",
     version="1.0.0"
 )
+
+@app.on_event("startup")
+def create_database_tables():
+    Base.metadata.create_all(bind=engine)
 
 # CORS configuration for frontend
 app.add_middleware(
@@ -35,6 +43,7 @@ app.include_router(project_router)
 app.include_router(chat_router)
 app.include_router(project_intelligence_router)
 app.include_router(employee_intelligence_router)
+app.include_router(auth_router)
 
 @app.get("/")
 def home():

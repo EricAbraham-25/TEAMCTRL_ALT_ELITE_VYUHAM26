@@ -7,7 +7,9 @@ from sqlalchemy import (
     Date,
     DateTime,
     ForeignKey,
-    UniqueConstraint
+    UniqueConstraint,
+    Boolean,
+    CheckConstraint
 )
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
@@ -151,3 +153,35 @@ class Task(Base):
 
     project = relationship("Project", back_populates="tasks")
     employee = relationship("Employee", back_populates="assigned_tasks")
+
+class User(Base):
+    __tablename__ = "users"
+
+    __table_args__ = (
+        CheckConstraint(
+            "role IN ('manager', 'employee')",
+            name="valid_user_role"
+        ),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    username = Column(String(100), unique=True, nullable=False)
+
+    password_hash = Column(String(255), nullable=False)
+
+    role = Column(String(20), nullable=False)
+
+    employee_id = Column(
+        Integer,
+        ForeignKey("employees.id"),
+        unique=True,
+        nullable=True
+    )
+
+    is_active = Column(Boolean, default=True, nullable=False)
+
+    created_at = Column(
+        DateTime(timezone=True),
+        server_default=func.now()
+    )
