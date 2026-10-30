@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OrgMind AI | Sign In</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="auth.css">
+</head>
+<body class="auth-body">
+
+    <div class="auth-card">
+        <div class="brand" style="margin-bottom: 25px;">
+            <div class="brand-icon">O</div>
+            <div>
+                <h2>OrgMind AI</h2>
+                <span>Company Intelligence</span>
+            </div>
+        </div>
+
+        <h1 class="auth-title">Welcome back</h1>
+        <p class="auth-subtitle">Sign in with your organization account</p>
+
+        <form id="loginForm" class="auth-form">
+            <label for="username">Username</label>
+            <input type="text" id="username" name="username" autocomplete="username" required>
+
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password" autocomplete="current-password" required>
+
+            <div id="loginError" class="auth-error" hidden></div>
+
+            <button type="submit" id="loginBtn" class="auth-submit">
+                <span id="loginBtnText">Sign In</span>
+            </button>
+        </form>
+    </div>
+
+    <script src="api.js"></script>
+    <script src="login.js"></script>
+</body>
+</html>

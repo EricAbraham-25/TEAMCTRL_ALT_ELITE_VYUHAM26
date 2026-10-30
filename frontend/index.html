@@ -1,126 +1,20 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OrgMind AI | Company Intelligence</title>
-    <link rel="stylesheet" href="style.css">
+    <title>OrgMind AI</title>
+    <script src="api.js"></script>
 </head>
 <body>
-
-    <div class="app-container">
-
-        <aside class="sidebar">
-            <div class="brand">
-                <div class="brand-icon">O</div>
-                <div>
-                    <h2>OrgMind AI</h2>
-                    <span>Company Intelligence</span>
-                </div>
-            </div>
-
-            <button class="new-chat" id="newChatBtn">
-                <span>ï¼‹</span> New conversation
-            </button>
-
-            <div class="sidebar-section">
-                <p class="section-label">QUICK ACCESS</p>
-                <button class="suggestion" data-question="Show me all ongoing projects">
-                    <span>â—ˆ</span> Projects
-                </button>
-                <button class="suggestion" data-question="Who works in the Development department?">
-                    <span>â™™</span> Employees
-                </button>
-                <button class="suggestion" data-question="Show Abin's attendance for the last 7 days">
-                    <span>â—·</span> Attendance
-                </button>
-                <button class="suggestion" data-question="What tasks are assigned to Abin?">
-                    <span>â˜·</span> Tasks
-                </button>
-            </div>
-
-            <div class="sidebar-footer">
-                <div class="status-dot"></div>
-                <span>Backend connection</span>
-                <span class="online">Online</span>
-            </div>
-        </aside>
-
-        <main class="main-content">
-
-            <header class="topbar">
-                <div>
-                    <h3>AI Assistant</h3>
-                    <p>Ask anything about your organization</p>
-                </div>
-                <div class="model-label">
-                    <span class="status-dot"></span>
-                    Claude Haiku
-                </div>
-            </header>
-
-            <section class="chat-area" id="chatArea">
-
-                <div class="welcome-screen" id="welcomeScreen">
-                    <div class="welcome-icon">âœ¦</div>
-                    <h1>Welcome to <span>OrgMind AI</span></h1>
-                    <p>Your intelligent company management assistant.<br>
-                    Ask questions and get answers from your company data.</p>
-
-                    <div class="suggestion-grid">
-                        <button class="suggestion-card" data-question="Show me all ongoing projects">
-                            <span>â—ˆ</span>
-                            <strong>Project overview</strong>
-                            <small>View project progress and deadlines</small>
-                        </button>
-
-                        <button class="suggestion-card" data-question="Who works in the Development department?">
-                            <span>â™™</span>
-                            <strong>Employee details</strong>
-                            <small>Find employees and their roles</small>
-                        </button>
-
-                        <button class="suggestion-card" data-question="Show Abin's attendance for the last 7 days">
-                            <span>â—·</span>
-                            <strong>Attendance</strong>
-                            <small>Check employee attendance</small>
-                        </button>
-
-                        <button class="suggestion-card" data-question="What tasks are assigned to Abin?">
-                            <span>â˜·</span>
-                            <strong>Task management</strong>
-                            <small>View assigned tasks and progress</small>
-                        </button>
-                    </div>
-                </div>
-
-                <div class="messages" id="messages"></div>
-
-            </section>
-
-            <footer class="input-area">
-                <form id="chatForm" class="chat-form">
-                    <textarea
-                        id="messageInput"
-                        placeholder="Ask OrgMind AI anything..."
-                        rows="1"
-                        maxlength="2000"
-                    ></textarea>
-
-                    <button type="submit" id="sendBtn" aria-label="Send message">
-                        âž¤
-                    </button>
-                </form>
-                <p class="disclaimer">
-                    OrgMind AI can make mistakes. Verify important company information.
-                </p>
-            </footer>
-
-        </main>
-    </div>
-
-    <script src="script.js"></script>
+    <script>
+        const token = getToken();
+        const user = getStoredUser();
+        if (token && user) {
+            window.location.href = user.role === "manager" ? "manager.html" : "employee.html";
+        } else {
+            window.location.href = "login.html";
+        }
+    </script>
 </body>
 </html>
-'@ | Set-Content -Encoding UTF8 frontend/index.html
-

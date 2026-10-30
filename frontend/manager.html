@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OrgMind AI | Manager Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="auth.css">
+</head>
+<body>
+
+    <div class="app-container" style="flex-direction: column; height: 100vh;">
+
+        <header class="topbar">
+            <div>
+                <h3>Manager Dashboard</h3>
+                <p>Organization-wide view</p>
+            </div>
+            <div class="topbar-right">
+                <div class="user-badge">
+                    <strong id="topbarUserName">-</strong>
+                    <span id="topbarUserRole">-</span>
+                </div>
+                <button class="logout-btn" id="logoutBtn">Log out</button>
+            </div>
+        </header>
+
+        <nav class="nav-tabs">
+            <button class="nav-tab active" data-target="view-overview">Overview</button>
+            <button class="nav-tab" data-target="view-employees">Employees</button>
+            <button class="nav-tab" data-target="view-departments">Departments</button>
+            <button class="nav-tab" data-target="view-projects">Projects</button>
+            <button class="nav-tab" data-target="view-attendance">Attendance</button>
+            <button class="nav-tab" data-target="view-employee-intel">Employee Intelligence</button>
+            <button class="nav-tab" data-target="view-project-intel">Project Intelligence</button>
+            <button class="nav-tab" data-target="view-chat">AI Assistant</button>
+        </nav>
+
+        <main style="flex: 1; overflow: hidden; display: flex; background: #f7f8fc;">
+
+        <section id="view-overview" class="view active" style="width:100%;">
+            <div class="cards-grid" id="overviewCards"></div>
+
+            <div class="panel">
+                <h3>Delayed Projects</h3>
+                <div id="delayedProjectsContainer"></div>
+            </div>
+        </section>
+
+        <section id="view-employees" class="view" style="width:100%;">
+            <div class="panel">
+                <h3>All Employees</h3>
+                <div id="employeesContainer"></div>
+            </div>
+        </section>
+
+        <section id="view-departments" class="view" style="width:100%;">
+            <div class="panel">
+                <h3>Departments</h3>
+                <div id="departmentsContainer"></div>
+            </div>
+        </section>
+
+        <section id="view-projects" class="view" style="width:100%;">
+            <div class="panel">
+                <h3>All Projects</h3>
+                <div id="projectsContainer"></div>
+            </div>
+        </section>
+
+        <section id="view-attendance" class="view" style="width:100%;">
+            <div class="panel">
+                <h3>Today Attendance</h3>
+                <div id="attendanceContainer"></div>
+            </div>
+        </section>
+
+        <section id="view-employee-intel" class="view" style="width:100%;">
+            <div class="panel">
+                <h3>Employee Intelligence</h3>
+                <div id="employeeIntelContainer"></div>
+            </div>
+        </section>
+
+        <section id="view-project-intel" class="view" style="width:100%;">
+            <div class="panel">
+                <h3>Project Intelligence</h3>
+                <div id="projectIntelContainer"></div>
+            </div>
+        </section>
+
+        <section id="view-chat" class="view" style="width:100%; padding:0;">
+            <div class="app-container" style="height: 100%;">
+                <main class="main-content">
+                    <section class="chat-area" id="chatArea">
+                        <div class="welcome-screen" id="welcomeScreen">
+                            <div class="welcome-icon">✦</div>
+                            <h1>Organization-wide <span>AI Assistant</span></h1>
+                            <p>Ask anything about your company data.</p>
+                        </div>
+                        <div class="messages" id="messages"></div>
+                    </section>
+                    <footer class="input-area">
+                        <form id="chatForm" class="chat-form">
+                            <textarea id="messageInput" placeholder="Ask OrgMind AI anything..." rows="1" maxlength="2000"></textarea>
+                            <button type="submit" id="sendBtn" aria-label="Send message">&#10148;</button>
+                        </form>
+                        <p class="disclaimer">OrgMind AI can make mistakes. Verify important company information.</p>
+                    </footer>
+                </main>
+            </div>
+        </section>
+
+        </main>
+    </div>
+
+    <script src="api.js"></script>
+    <script src="dashboard-common.js"></script>
+    <script src="manager.js"></script>
+</body>
+</html>

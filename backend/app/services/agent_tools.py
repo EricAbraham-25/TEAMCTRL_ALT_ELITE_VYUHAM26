@@ -10,10 +10,22 @@ from app.models.company import (
     Project,
     ProjectMember,
     Task,
+    User,
 )
 
 
-def search_employees(db: Session, query: str):
+def _is_member_of_project(db: Session, project_id: int, employee_id: int) -> bool:
+    return db.query(ProjectMember).filter(
+        ProjectMember.project_id == project_id,
+        ProjectMember.employee_id == employee_id
+    ).first() is not None
+
+
+def search_employees(db: Session, current_user: User, query: str):
+    # Employees cannot browse the employee directory. Managers only.
+    if current_user.role != "manager":
+        return {"error": "You are not permitted to search other employees."}
+
     employees = (
         db.query(Employee)
         .filter(
@@ -37,12 +49,23 @@ def search_employees(db: Session, query: str):
     ]
 
 
-def get_employee_attendance(db: Session, employee_name: str):
-    employee = (
-        db.query(Employee)
-        .filter(Employee.name.ilike(f"%{employee_name}%"))
-        .first()
-    )
+def get_employee_attendance(db: Session, current_user: User, employee_name: str = None):
+    # Employees can only ever see their own attendance, regardless of
+    # what name is supplied in the prompt. Identity comes from the JWT.
+    if current_user.role == "employee":
+        if current_user.employee_id is None:
+            return {"error": "No employee profile linked to this account."}
+        employee = db.query(Employee).filter(
+            Employee.id == current_user.employee_id
+        ).first()
+    else:
+        if not employee_name:
+            return {"error": "Please provide an employee name."}
+        employee = (
+            db.query(Employee)
+            .filter(Employee.name.ilike(f"%{employee_name}%"))
+            .first()
+        )
 
     if not employee:
         return {"error": "Employee not found"}
@@ -69,12 +92,21 @@ def get_employee_attendance(db: Session, employee_name: str):
     }
 
 
-def get_employee_tasks(db: Session, employee_name: str):
-    employee = (
-        db.query(Employee)
-        .filter(Employee.name.ilike(f"%{employee_name}%"))
-        .first()
-    )
+def get_employee_tasks(db: Session, current_user: User, employee_name: str = None):
+    if current_user.role == "employee":
+        if current_user.employee_id is None:
+            return {"error": "No employee profile linked to this account."}
+        employee = db.query(Employee).filter(
+            Employee.id == current_user.employee_id
+        ).first()
+    else:
+        if not employee_name:
+            return {"error": "Please provide an employee name."}
+        employee = (
+            db.query(Employee)
+            .filter(Employee.name.ilike(f"%{employee_name}%"))
+            .first()
+        )
 
     if not employee:
         return {"error": "Employee not found"}
@@ -102,8 +134,18 @@ def get_employee_tasks(db: Session, employee_name: str):
     }
 
 
-def list_projects(db: Session, status: str = None):
+def list_projects(db: Session, current_user: User, status: str = None):
     query = db.query(Project)
+
+    if current_user.role == "employee":
+        if current_user.employee_id is None:
+            return {"error": "No employee profile linked to this account."}
+        query = query.join(
+            ProjectMember,
+            Project.id == ProjectMember.project_id
+        ).filter(
+            ProjectMember.employee_id == current_user.employee_id
+        )
 
     if status:
         query = query.filter(Project.status.ilike(status))
@@ -122,7 +164,7 @@ def list_projects(db: Session, status: str = None):
     ]
 
 
-def get_project_details(db: Session, project_name: str):
+def get_project_details(db: Session, current_user: User, project_name: str):
     project = (
         db.query(Project)
         .filter(Project.name.ilike(f"%{project_name}%"))
@@ -131,6 +173,12 @@ def get_project_details(db: Session, project_name: str):
 
     if not project:
         return {"error": "Project not found"}
+
+    if current_user.role == "employee":
+        if current_user.employee_id is None:
+            return {"error": "No employee profile linked to this account."}
+        if not _is_member_of_project(db, project.id, current_user.employee_id):
+            return {"error": "You are not assigned to this project."}
 
     members = (
         db.query(ProjectMember)
@@ -143,6 +191,11 @@ def get_project_details(db: Session, project_name: str):
         .filter(Task.project_id == project.id)
         .all()
     )
+
+    if current_user.role == "employee":
+        # Employees see only their own tasks within the project, never
+        # the full team task list.
+        tasks = [t for t in tasks if t.assigned_to == current_user.employee_id]
 
     return {
         "project": project.name,
@@ -157,7 +210,7 @@ def get_project_details(db: Session, project_name: str):
                 "role": m.role,
             }
             for m in members
-        ],
+        ] if current_user.role == "manager" else [],
         "tasks": [
             {
                 "title": t.title,
@@ -172,7 +225,11 @@ def get_project_details(db: Session, project_name: str):
     }
 
 
-def get_department_employees(db: Session, department_name: str):
+def get_department_employees(db: Session, current_user: User, department_name: str):
+    # Browsing an entire department's roster is manager-only, org-wide data.
+    if current_user.role != "manager":
+        return {"error": "You are not permitted to view department rosters."}
+
     department = (
         db.query(Department)
         .filter(Department.name.ilike(f"%{department_name}%"))
@@ -202,7 +259,8 @@ def get_department_employees(db: Session, department_name: str):
         ],
     }
 
-def get_project_intelligence(db, project_name):
+
+def get_project_intelligence(db: Session, current_user: User, project_name: str):
     project = db.query(Project).filter(
         Project.name.ilike(f"%{project_name}%")
     ).first()
@@ -210,14 +268,32 @@ def get_project_intelligence(db, project_name):
     if not project:
         return {"error": f"Project '{project_name}' not found"}
 
+    if current_user.role == "employee":
+        if current_user.employee_id is None:
+            return {"error": "No employee profile linked to this account."}
+        if not _is_member_of_project(db, project.id, current_user.employee_id):
+            return {"error": "You are not assigned to this project."}
+
     return analyze_project(db, project.id)
 
-def get_employee_intelligence(db, employee_name):
-    employee = db.query(Employee).filter(
-        Employee.name.ilike(f"%{employee_name}%")
-    ).first()
+
+def get_employee_intelligence(db: Session, current_user: User, employee_name: str = None):
+    # Identity always comes from the authenticated user, never from the
+    # prompt, for employee-role callers.
+    if current_user.role == "employee":
+        if current_user.employee_id is None:
+            return {"error": "No employee profile linked to this account."}
+        employee = db.query(Employee).filter(
+            Employee.id == current_user.employee_id
+        ).first()
+    else:
+        if not employee_name:
+            return {"error": "Please provide an employee name."}
+        employee = db.query(Employee).filter(
+            Employee.name.ilike(f"%{employee_name}%")
+        ).first()
 
     if not employee:
-        return {"error": f"Employee '{employee_name}' not found"}
+        return {"error": f"Employee not found"}
 
     return analyze_employee(db, employee.id)

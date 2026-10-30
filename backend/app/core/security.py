@@ -1,9 +1,14 @@
 import os
+from pathlib import Path
 from datetime import datetime, timedelta, timezone
 
 import jwt
+from dotenv import load_dotenv
 from pwdlib import PasswordHash
 
+# Load backend/.env regardless of the terminal's working directory
+env_path = Path(__file__).resolve().parents[2] / ".env"
+load_dotenv(dotenv_path=env_path)
 
 password_hash = PasswordHash.recommended()
 

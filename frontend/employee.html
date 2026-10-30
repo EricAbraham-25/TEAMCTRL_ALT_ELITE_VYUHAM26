@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OrgMind AI | My Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="auth.css">
+</head>
+<body>
+
+    <div class="app-container" style="flex-direction: column; height: 100vh;">
+
+        <header class="topbar">
+            <div>
+                <h3>My Dashboard</h3>
+                <p>Your personal workspace</p>
+            </div>
+            <div class="topbar-right">
+                <div class="user-badge">
+                    <strong id="topbarUserName">-</strong>
+                    <span id="topbarUserRole">-</span>
+                </div>
+                <button class="logout-btn" id="logoutBtn">Log out</button>
+            </div>
+        </header>
+
+        <nav class="nav-tabs">
+            <button class="nav-tab active" data-target="view-profile">Profile</button>
+            <button class="nav-tab" data-target="view-projects">My Projects</button>
+            <button class="nav-tab" data-target="view-tasks">My Tasks</button>
+            <button class="nav-tab" data-target="view-attendance">My Attendance</button>
+            <button class="nav-tab" data-target="view-intel">My Intelligence</button>
+            <button class="nav-tab" data-target="view-chat">AI Assistant</button>
+        </nav>
+
+        <main style="flex: 1; overflow: hidden; display: flex; background: #f7f8fc;">
+
+        <section id="view-profile" class="view active" style="width:100%;">
+            <div class="panel">
+                <h3>Personal Profile</h3>
+                <div id="profileContainer"></div>
+            </div>
+        </section>
+
+        <section id="view-projects" class="view" style="width:100%;">
+            <div class="panel">
+                <h3>Assigned Projects</h3>
+                <div id="projectsContainer"></div>
+            </div>
+        </section>
+
+        <section id="view-tasks" class="view" style="width:100%;">
+            <div class="panel">
+                <h3>My Tasks</h3>
+                <div id="tasksContainer"></div>
+            </div>
+        </section>
+
+        <section id="view-attendance" class="view" style="width:100%;">
+            <div class="panel">
+                <h3>Today Status</h3>
+                <div id="todayAttendanceContainer" style="margin-bottom: 18px;"></div>
+                <h3>Attendance History</h3>
+                <div id="attendanceHistoryContainer"></div>
+            </div>
+        </section>
+
+        <section id="view-intel" class="view" style="width:100%;">
+            <div class="panel">
+                <h3>My Intelligence</h3>
+                <div id="intelContainer"></div>
+            </div>
+        </section>
+
+        <section id="view-chat" class="view" style="width:100%; padding:0;">
+            <div class="app-container" style="height: 100%;">
+                <main class="main-content">
+                    <section class="chat-area" id="chatArea">
+                        <div class="welcome-screen" id="welcomeScreen">
+                            <div class="welcome-icon">✦</div>
+                            <h1>Your personal <span>AI Assistant</span></h1>
+                            <p>Ask about your own tasks, projects and attendance.</p>
+                        </div>
+                        <div class="messages" id="messages"></div>
+                    </section>
+                    <footer class="input-area">
+                        <form id="chatForm" class="chat-form">
+                            <textarea id="messageInput" placeholder="Ask OrgMind AI about your work..." rows="1" maxlength="2000"></textarea>
+                            <button type="submit" id="sendBtn" aria-label="Send message">&#10148;</button>
+                        </form>
+                        <p class="disclaimer">OrgMind AI can make mistakes. Verify important information.</p>
+                    </footer>
+                </main>
+            </div>
+        </section>
+
+        </main>
+    </div>
+
+    <script src="api.js"></script>
+    <script src="dashboard-common.js"></script>
+    <script src="employee.js"></script>
+</body>
+</html>
